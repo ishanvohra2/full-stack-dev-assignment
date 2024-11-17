@@ -1,7 +1,13 @@
 <script>
+  import apiService from '$lib/apiService/apiService';
+  import { auth } from '$lib/firebase';
+    import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+    import { authStore } from '$lib/stores/authStores';
     import { goto } from '$app/navigation';
     import image from '../assets/undraw_teacher_re_sico.svg'
     let selectedLanguage = "English";
+    let loading = false;
+    let error = null;
 
     //TODO Get from server
     const languages = [
@@ -13,16 +19,36 @@
       "Japanese"
     ];
   
-    async function handleGetStarted() {
-      // Add your navigation or form submission logic here
-      console.log("Selected language:", selectedLanguage);
-      try {
-        await goto('/onboarding', {
-          invalidateAll: true
-        });
-      } catch (error) {
-        console.error('Navigation error:', error);
-      }
+    async function handleGoogleSignIn() {
+        loading = true;
+        error = null;
+        
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            
+            // Get ID token
+            const token = await result.user.getIdToken();
+            
+            console.log("AUTH TOKEN: ", token)
+
+            // Store user and token in auth store
+            authStore.setUser(result.user, token);
+
+            // Verify token with backend
+            await apiService.verifyGoogleToken(token);
+            authStore.setUser(result.user, token);
+
+            // Navigate to onboarding
+            await goto('/onboarding', {
+                invalidateAll: true
+            });
+        } catch (err) {
+            console.error('Authentication error:', err);
+            error = 'Failed to sign in with Google. Please try again.';
+        } finally {
+            loading = false;
+        }
     }
   </script>
   
@@ -49,12 +75,20 @@
             {/each}
           </select>
           
-          <button on:click={handleGetStarted}>
-            Get started with Google
-            <svg viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
-            </svg>
-          </button>
+          <button on:click={handleGoogleSignIn} disabled={loading}>
+            {#if loading}
+                Loading...
+            {:else}
+                Get started with Google
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
+                </svg>
+            {/if}
+        </button>
+
+        {#if error}
+            <p class="error-message">{error}</p>
+        {/if}
         </div>
       </div>
       
@@ -159,16 +193,6 @@
       margin-left: 8px;
     }
   
-    .tutor-link {
-      color: #333;
-      text-decoration: none;
-      font-size: 14px;
-    }
-  
-    .tutor-link:hover {
-      text-decoration: underline;
-    }
-  
     .image-container {
       flex: 1;
       position: relative;
@@ -228,5 +252,16 @@
         max-width: 500px;
         margin: 0 auto;
       }
+    }
+
+    .error-message {
+        color: #ff4444;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
     }
   </style>
