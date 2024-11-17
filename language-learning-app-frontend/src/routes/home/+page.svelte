@@ -1,5 +1,6 @@
 <!-- src/routes/+page.svelte -->
 <script>
+  import { goto } from '$app/navigation';
   let languages = [ "English", "Spanish", "French", "German", "Japanese", "Chinese", "Hindi" ]; // Selected language let selectedLanguage = languages[0];
   let selectedLanguage = languages[0];
   const progress = 95;
@@ -27,6 +28,10 @@
     { title: 'Idioms & Phrases', completed: false },
     { title: 'Advanced Vocabulary', completed: false }
   ];
+
+  async function navigateTo(destination) {
+    await goto(destination)
+  }
 </script>
 
 <div class="app">
@@ -36,7 +41,7 @@
       <span class="material-icons">school</span>
       <span>LEARN</span>
     </button>
-    <button class="nav-button">
+    <button class="nav-button" on:click={navigateTo('/profile')}>
       <span class="material-icons">person</span>
       <span>PROFILE</span>
     </button>
