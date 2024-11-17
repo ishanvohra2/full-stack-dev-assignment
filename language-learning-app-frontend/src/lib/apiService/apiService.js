@@ -177,6 +177,24 @@ class ApiService {
             throw error;
         }
     }
+
+    async addLanguage(languageData) {
+        try {
+            const token = this.getAuthToken();
+            const response = await fetch(`${this.baseUrl}/user/add-language`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(languageData)
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Failed to add language:', error);
+            throw error;
+        }
+    }
 }
 
 // Create a singleton instance

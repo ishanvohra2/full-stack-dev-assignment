@@ -7,18 +7,44 @@
   let userProfile = null;
   let loading = true;
   let error = null;
+  let newLanguage = "";
+  let languages = [];
 
   onMount(async () => {
     try {
-      const profile = await apiService.getUserProfile();
+      const [profile, languagesData] = await Promise.all([
+        apiService.getUserProfile(),
+        apiService.getLanguages()
+      ]);
+      
       userProfile = profile;
+      languages = Object.keys(languagesData);
     } catch (err) {
-      error = 'Failed to load profile';
-      console.error('Error loading profile:', err);
+      error = 'Failed to load data';
+      console.error('Error loading data:', err);
     } finally {
       loading = false;
     }
   });
+
+  async function addLanguage() {
+    if (!newLanguage) return;
+    
+    try {
+      const updatedLanguages = [...userProfile.languages, {
+        name: newLanguage,
+        level: 'Beginner',
+        progress: 0
+      }];
+      
+      await apiService.updateUserProfile({ languages: updatedLanguages });
+      userProfile.languages = updatedLanguages;
+      newLanguage = "";
+    } catch (err) {
+      error = 'Failed to add language';
+      console.error('Error adding language:', err);
+    }
+  }
 
   async function handleLogout() {
     try {
@@ -92,22 +118,33 @@
         <!-- Learning Languages Section -->
         <section class="lesson-section">
           <h2>My Languages</h2>
+          <div class="language-selector">
+            <select 
+              class="language-dropdown" 
+              bind:value={newLanguage}
+            >
+              <option value="">Select a language</option>
+              {#each languages as language}
+                {#if !userProfile.languages.find(l => l.name === language)}
+                  <option value={language}>{language}</option>
+                {/if}
+              {/each}
+            </select>
+            <button class="add-language-btn" on:click={addLanguage} disabled={!newLanguage}>
+              <span class="material-icons">add</span>
+              Add Language
+            </button>
+          </div>
           <div class="language-list">
             {#each userProfile.languages || [] as lang}
-              <div class="language-card">
-                <div class="language-card-header">
-                  <div>
-                    <h3 class="language-name">{lang.name}</h3>
-                    <p class="language-level">{lang.level || 'Beginner'}</p>
-                  </div>
-                </div>
-                <div class="language-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: {lang.progress || 0}%"></div>
-                  </div>
-                  <span class="progress-text">{lang.progress || 0}% Complete</span>
-                </div>
+            <div class="language-card">
+              <h3 class="language-name">{lang.language}</h3>
+              <p class="language-level">{lang.level || 'Beginner'}</p>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: {lang.progress || 0}%"></div>
               </div>
+              <span class="progress-text">{lang.progress || 0}% Complete</span>
+            </div>
             {/each}
           </div>
         </section>
@@ -218,6 +255,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
+    width: 100%
   }
   
   .lesson-section {
@@ -225,6 +263,7 @@
     padding: 1.5rem;
     border-radius: 12px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: 100%;
   }
 
   .profile-info {
@@ -356,10 +395,12 @@
   }
 
   .language-card {
-    background-color: #f8f8ff;
-    border-radius: 8px;
-    padding: 1.25rem;
-  }
+  background-color: #f8f8ff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Adding subtle shadow */
+}
+
 
   .language-card-header {
     display: flex;
@@ -378,22 +419,7 @@
   .language-level {
     font-size: 0.9rem;
     color: #666;
-    margin: 0.25rem 0 0 0;
-  }
-
-  .remove-language-btn {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-  }
-
-  .remove-language-btn:hover {
-    background-color: #ffebf3;
-    color: #ff4f99;
+    margin: 0;
   }
 
   .language-progress {
@@ -443,17 +469,6 @@
 
   .icon {
     color: #ff4f99;
-  }
-
-  .achievement-title {
-    font-weight: 500;
-    color: #333;
-  }
-
-  .achievement-description {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 0.25rem;
   }
 
   .activity-title {

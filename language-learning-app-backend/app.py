@@ -150,6 +150,32 @@ def check_onboarding():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 401
+    
+@app.route('/api/user/add-language', methods=['POST'])
+def add_language():
+    try:
+        token = request.headers.get('Authorization').split('Bearer ')[1]
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        
+        language_data = request.json
+        
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+            
+        user_data = user_doc.to_dict()
+        languages = user_data.get('languages', [])
+        languages.append(language_data)
+        
+        user_ref.update({'languages': languages})
+        
+        return jsonify(user_ref.get().to_dict())
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
