@@ -264,12 +264,6 @@
     font-weight: 600;
   }
   
-  .subtitle {
-    margin: 0.5rem 0 0;
-    color: #666;
-    font-size: 1.1rem;
-  }
-  
   .progress-container {
     background: white;
     padding: 1.5rem;
@@ -369,15 +363,6 @@
     color: #ff4f99;
   }
   
-  .headerRow { 
-    display: flex; 
-    flex-direction: row; 
-  } 
-  
-  .headerItem { 
-    margin: 0 10px; 
-  }
-
   .loading {
     display: flex;
     justify-content: center;
