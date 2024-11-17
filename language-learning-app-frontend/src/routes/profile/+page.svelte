@@ -31,20 +31,21 @@
     if (!newLanguage) return;
     
     try {
-      const updatedLanguages = [...userProfile.languages, {
-        name: newLanguage,
-        level: 'Beginner',
-        progress: 0
-      }];
-      
-      await apiService.updateUserProfile({ languages: updatedLanguages });
-      userProfile.languages = updatedLanguages;
-      newLanguage = "";
+        // Use the existing addLanguage method from apiService
+        const updatedProfile = await apiService.addLanguage({
+            language: newLanguage,
+            level: 'Beginner',
+            progress: 0
+        });
+        
+        // Update the local userProfile with the response from the server
+        userProfile = updatedProfile;
+        newLanguage = "";
     } catch (err) {
-      error = 'Failed to add language';
-      console.error('Error adding language:', err);
+        error = 'Failed to add language';
+        console.error('Error adding language:', err);
     }
-  }
+}
 
   async function handleLogout() {
     try {
