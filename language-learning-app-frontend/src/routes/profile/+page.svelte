@@ -50,7 +50,7 @@
   async function handleLogout() {
     try {
       authStore.clearUser();
-      await goto('/login');
+      await goto('/');
     } catch (err) {
       console.error('Logout error:', err);
     }

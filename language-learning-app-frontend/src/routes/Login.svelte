@@ -100,10 +100,10 @@
   
     <main>
       <div class="content">
-        <h1>Find the right tutor for you.</h1>
+        <h1>Learn new language</h1>
         
         <p class="subtitle">
-          Tell us how you'd like to learn to get a personalized choice of tutors
+          Expand your horizons by learning new languages!
         </p>
         
         <div class="form-group">
