@@ -6,6 +6,7 @@
 
   // Initialize with empty array
   let questions = [];
+  let answers = [];
   let loading = true;
   let error = null;
   let currentQuestionIndex = 0;
@@ -57,12 +58,29 @@
   });
 
   async function handleNext() {
-      if (!questions || currentQuestionIndex >= questions.length - 1) {
-          await goto('/home');
+      if (!selectedOption && selectedOption !== 0) {
+          // Show error or prevent proceeding
           return;
       }
-      currentQuestionIndex++;
-      selectedOption = null;
+      
+      // Save the selected answer
+      answers[currentQuestionIndex] = selectedOption;
+      
+      if (currentQuestionIndex >= questions.length - 1) {
+          // Last question completed, save answers
+          try {
+              await apiService.saveOnboardingAnswers(answers);
+              // Navigate to home/dashboard
+              goto('/home');
+          } catch (err) {
+              error = 'Failed to save answers. Please try again.';
+              console.error('Error saving answers:', err);
+          }
+      } else {
+          // Move to next question
+          currentQuestionIndex++;
+          selectedOption = null; // Reset selection for next question
+      }
   }
 
   function handleOptionSelect(index) {

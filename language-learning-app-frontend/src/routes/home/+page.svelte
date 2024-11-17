@@ -331,4 +331,13 @@
   .headerItem { 
     margin: 0 10px; 
   }
+
+  .logout-button {
+    margin-top: auto;
+    color: #ff4f99;
+  }
+
+  .logout-button:hover {
+    background-color: #ffebf3;
+  }
 </style>

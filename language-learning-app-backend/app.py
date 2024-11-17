@@ -100,6 +100,54 @@ def get_onboarding_questions():
         return jsonify({'error': 'Questions not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/onboarding/save', methods=['POST'])
+def save_onboarding():
+    try:
+        # Get token from header
+        token = request.headers.get('Authorization').split('Bearer ')[1]
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        
+        # Get selected answers from request body
+        answers = request.json.get('answers')
+        
+        if not answers:
+            return jsonify({'error': 'No answers provided'}), 400
+            
+        # Update user document in Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'onboardingQuestions': answers
+        })
+        
+        return jsonify({'message': 'Onboarding data saved successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
+    
+@app.route('/api/user/check-onboarding', methods=['GET'])
+def check_onboarding():
+    try:
+        # Get token from header
+        token = request.headers.get('Authorization').split('Bearer ')[1]
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        
+        # Get user document from Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        
+        if not user_doc.exists:
+            return jsonify({'hasCompletedOnboarding': False})
+            
+        user_data = user_doc.to_dict()
+        has_completed = 'onboardingQuestions' in user_data
+        
+        return jsonify({'hasCompletedOnboarding': has_completed})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)

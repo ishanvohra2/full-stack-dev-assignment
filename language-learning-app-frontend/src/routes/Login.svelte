@@ -28,9 +28,7 @@
             loading = true
             try {
               await apiService.verifyGoogleToken(token);
-              await goto('/home', {
-                  invalidateAll: true
-              });
+              checkOnboardingStatus()
             }
             catch(error){
               console.error(error)
@@ -67,16 +65,25 @@
             
             await apiService.createUserProfile(initialLanguages);
 
-            // Navigate to onboarding
-            await goto('/onboarding', {
-                invalidateAll: true
-            });
+            // Check onboarding status
+            checkOnboardingStatus()
         } catch (err) {
             console.error('Authentication error:', err);
             error = 'Failed to sign in with Google. Please try again.';
         } finally {
             loading = false;
         }
+    }
+
+    async function checkOnboardingStatus() {
+      const onboardingStatus = await apiService.checkOnboardingStatus();
+            
+            // Redirect based on onboarding status
+            if (onboardingStatus.hasCompletedOnboarding) {
+                goto('/home');
+            } else {
+                goto('/onboarding');
+            }
     }
   </script>
   

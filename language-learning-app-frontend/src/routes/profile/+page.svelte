@@ -43,6 +43,11 @@
   async function navigateTo(destination) {
     await goto(destination)
   }
+
+  async function handleLogout() {
+    // Add any logout logic here (clear tokens, session etc.)
+    await goto('/login'); // Redirect to login page
+  }
 </script>
 
 <div class="app">
@@ -56,6 +61,10 @@
       <span class="material-icons">person</span>
       <span>PROFILE</span>
     </button>
+    <button class="nav-button logout-button" on:click={handleLogout}>
+      <span class="material-icons">logout</span>
+      <span>LOGOUT</span>
+      </button>
   </nav>
 
   <main class="content">
@@ -504,6 +513,15 @@
     font-size: 0.8rem;
     color: #888;
     margin-top: 0.25rem;
+  }
+  
+  .logout-button {
+    margin-top: auto;
+    color: #ff4f99;
+  }
+
+  .logout-button:hover {
+    background-color: #ffebf3;
   }
 </style>
 
