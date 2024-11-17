@@ -66,12 +66,20 @@
     let isCorrect = null;
     let progress = 0;
   
-    function nextSection() {
-      if (currentSection < lessonContent[lessonType].sections.length - 1) {
+    async function nextSection() {
+    if (currentSection < lessonContent[lessonType].sections.length - 1) {
         currentSection++;
         updateProgress();
-      }
+    } else {
+        // Last section completed
+        try {
+            await apiService.updateLessonProgress(lessonType, lessonId);
+            goto('/home');
+        } catch (error) {
+            console.error('Error updating progress:', error);
+        }
     }
+}
   
     function previousSection() {
       if (currentSection > 0) {
@@ -95,6 +103,7 @@
     function goBack() {
       goto('/home');
     }
+    
   </script>
   
   <div class="app">

@@ -185,6 +185,46 @@ def get_lessons(language):
         return jsonify(lessons), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/user/complete-lesson', methods=['POST'])
+def complete_lesson():
+    try:
+        token = request.headers.get('Authorization').split('Bearer ')[1]
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+        
+        lesson_data = request.json
+        lesson_type = lesson_data.get('type')
+        lesson_id = lesson_data.get('id')
+        
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+            
+        user_data = user_doc.to_dict()
+        completed_lessons = user_data.get('completedLessons', [])
+        
+        # Add lesson to completed list if not already present
+        lesson_key = f"{lesson_type}_{lesson_id}"
+        if lesson_key not in completed_lessons:
+            completed_lessons.append(lesson_key)
+            
+        # Calculate progress
+        total_lessons = 15  # Assuming 5 lessons each for grammar, audio, vocabulary
+        progress = (len(completed_lessons) / total_lessons) * 100
+        
+        # Update user document
+        user_ref.update({
+            'completedLessons': completed_lessons,
+            'progress': progress
+        })
+        
+        return jsonify({'progress': progress}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

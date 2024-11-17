@@ -16,15 +16,10 @@
   onMount(async () => {
     try {
       // Fetch available languages
-      const profile = await apiService.getUserProfile()
-      languages = profile.languages
+      const userProfile = await apiService.getUserProfile()
+      languages = userProfile.languages;
       selectedLanguage = languages[0].language;
-      console.log("SELECTED LANGUAGE", selectedLanguage)
-      // Load initial lessons
       await loadLessons(selectedLanguage);
-      
-      // Get user profile for progress
-      const userProfile = await apiService.getUserProfile();
       if (userProfile.progress) {
         progress = userProfile.progress;
       }
@@ -38,42 +33,45 @@
 
   async function loadLessons(language) {
     try {
-      loading = true;
-      const lessonsData = await apiService.getLessons(language);
-      
-      // Sort lessons into their respective categories
-      grammarLessons = lessonsData.grammar.sections.map((lesson, index) => ({
-        id: (index + 1).toString(),
-        title: lesson.content.split('.')[0], // Take first sentence as title
-        completed: false // You might want to track this in your backend
-      }));
-
-      audioExercises = lessonsData.audio.sections
-        .filter(section => section.type === 'audio')
-        .map((exercise, index) => ({
-          id: (index + 1).toString(),
-          title: exercise.title,
-          completed: false
+        loading = true;
+        const [lessonsData, userProfile] = await Promise.all([
+            apiService.getLessons(language),
+            apiService.getUserProfile()
+        ]);
+        
+        // Update progress from user profile
+        progress = userProfile.progress || 0;
+        
+        // Update completed status for lessons
+        const completedLessons = userProfile.completedLessons || [];
+        
+        grammarLessons = lessonsData.grammar.sections.map((lesson, index) => ({
+            id: (index + 1).toString(),
+            title: lesson.content.split('.')[0],
+            completed: completedLessons.includes(`grammar_${index + 1}`)
         }));
 
-      vocabularyList = lessonsData.vocabulary.sections.map((section, index) => ({
-        id: (index + 1).toString(),
-        title: section.type === 'flashcard' ? `Flashcard Set ${index + 1}` : 'Vocabulary Set',
-        completed: false
-      }));
+        audioExercises = lessonsData.audio.sections
+            .filter(section => section.type === 'audio')
+            .map((exercise, index) => ({
+                id: (index + 1).toString(),
+                title: exercise.title,
+                completed: completedLessons.includes(`audio_${index + 1}`)
+            }));
+
+        vocabularyList = lessonsData.vocabulary.sections.map((section, index) => ({
+            id: (index + 1).toString(),
+            title: section.type === 'flashcard' ? `Flashcard Set ${index + 1}` : 'Vocabulary Set',
+            completed: completedLessons.includes(`vocabulary_${index + 1}`)
+        }));
 
     } catch (err) {
-      error = 'Failed to load lessons. Please try again.';
-      console.error('Error loading lessons:', err);
+        error = 'Failed to load lessons. Please try again.';
+        console.error('Error loading lessons:', err);
     } finally {
-      loading = false;
+        loading = false;
     }
-  }
-
-  // Watch for language changes
-  $: if (selectedLanguage) {
-    loadLessons(selectedLanguage);
-  }
+}
 
   async function navigateTo(destination) {
     await goto(destination);
@@ -114,18 +112,6 @@
       <div class="header">
         <div>
           <h1>Welcome back!</h1>
-          <div class="headerRow">
-            <div class="headerItem">
-              <p class="subtitle">Learn</p>
-            </div>
-            <div class="headerItem">
-              <select bind:value={selectedLanguage}> 
-                {#each languages as language} 
-                  <option value={language}>{language}</option>
-                {/each} 
-              </select>
-            </div>
-          </div>
         </div>
       </div>
       

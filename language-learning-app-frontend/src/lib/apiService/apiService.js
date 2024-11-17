@@ -216,6 +216,45 @@ class ApiService {
             throw error;
         }
     }
+
+    async completeLesson(type, id) {
+        try {
+            const token = this.getAuthToken();
+            const response = await fetch(`${this.baseUrl}/user/complete-lesson`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type, id })
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error completing lesson:', error);
+            throw error;
+        }
+    }
+
+    async updateLessonProgress(lessonType, lessonId) {
+        try {
+            const token = this.getAuthToken();
+            const response = await fetch(`${this.baseUrl}/user/complete-lesson`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: lessonType,
+                    id: lessonId
+                })
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Error updating lesson progress:', error);
+            throw error;
+        }
+    }
 }
 
 // Create a singleton instance
