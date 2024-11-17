@@ -52,6 +52,57 @@ class ApiService {
             throw error;
         }
     }
+
+    async getLanguages() {
+        try {
+            const response = await fetch(`${this.baseUrl}/languages`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Failed to fetch languages:', error);
+            throw error;
+        }
+    }
+
+    // Create user profile
+    async createUserProfile(languages) {
+        try {
+            const token = this.getAuthToken();
+            const response = await fetch(`${this.baseUrl}/user/create-profile`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ languages })
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Failed to create profile:', error);
+            throw error;
+        }
+    }
+
+    async getOnboardingQuestions() {
+        try {
+            const token = this.getAuthToken();
+            const response = await fetch(`${this.baseUrl}/onboarding/questions`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Failed to fetch onboarding questions:', error);
+            throw error;
+        }
+    }
 }
 
 // Create a singleton instance

@@ -1,122 +1,128 @@
 <script>
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    import lottie from 'lottie-web';
-  
-    // Questions array
-    const questions = [
-      {
-        id: 1,
-        question: "What's your goal?",
-        options: [
-          { icon: "🌐", text: "Career and business" },
-          { icon: "👶", text: "Lessons for kids" },
-          { icon: "📚", text: "Exams and course work" },
-          { icon: "🎨", text: "Culture, travel and hobby" }
-        ]
-      },
-      {
-        id: 2,
-        question: "What's your goal?",
-        options: [
-          { icon: "🌐", text: "Career and business" },
-          { icon: "👶", text: "Lessons for kids" },
-          { icon: "📚", text: "Exams and course work" },
-          { icon: "🎨", text: "Culture, travel and hobby" }
-        ]
-      },
-      {
-        id: 3,
-        question: "What's your goal?",
-        options: [
-          { icon: "🌐", text: "Career and business" },
-          { icon: "👶", text: "Lessons for kids" },
-          { icon: "📚", text: "Exams and course work" },
-          { icon: "🎨", text: "Culture, travel and hobby" }
-        ]
-      },
-      // Add more questions here
-    ];
-  
-    let currentQuestionIndex = 0;
-    let selectedOption = null;
-  
-    onMount(() => {
-      const initAnimation = async () => {
-        try {
-          // If the file is in the static folder
-          const animation = lottie.loadAnimation({
-            container: document.querySelector('.lottie-container'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: '/onboarding.json' // Note: path starts from static folder
-          });
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import lottie from 'lottie-web';
+  import apiService from '$lib/apiService/apiService';
 
-          return () => animation.destroy();
-        } catch (error) {
-          console.error('Error loading animation:', error);
-        }
-  };
+  // Initialize with empty array
+  let questions = [];
+  let loading = true;
+  let error = null;
+  let currentQuestionIndex = 0;
+  let selectedOption = null;
+  let mounted = false;
 
-  initAnimation();
-});
-
-    async function handleNext() {
-      if (currentQuestionIndex < questions.length - 1) {
-        currentQuestionIndex++;
-        selectedOption = null;
-      } else {
-        // Navigate to home when all questions are answered
-        await goto('/home');
+  onMount(async () => {
+      mounted = true;
+      try {
+          loading = true;
+          const data = await apiService.getOnboardingQuestions();
+          if (!data?.questions_list) {
+              throw new Error('Invalid response format');
+          }
+          questions = data.questions_list;
+          console.log("QUESTIONS: ", questions)
+      } catch (err) {
+          error = 'Failed to load questions. Please try again.';
+          console.error('Error loading questions:', err);
+      } finally {
+          loading = false;
       }
-    }
-  
-    function handleSkip() {
+
+      const initAnimation = async () => {
+          try {
+              if (!mounted) return;
+              
+              const animation = lottie.loadAnimation({
+                  container: document.querySelector('.lottie-container'),
+                  renderer: 'svg',
+                  loop: true,
+                  autoplay: true,
+                  path: '/onboarding.json'
+              });
+
+              return () => {
+                  if (animation) animation.destroy();
+              };
+          } catch (error) {
+              console.error('Error loading animation:', error);
+          }
+      };
+
+      const cleanup = await initAnimation();
+      return () => {
+          mounted = false;
+          if (cleanup) cleanup();
+      };
+  });
+
+  async function handleNext() {
+      if (!questions || currentQuestionIndex >= questions.length - 1) {
+          await goto('/home');
+          return;
+      }
+      currentQuestionIndex++;
+      selectedOption = null;
+  }
+
+  function handleSkip() {
       handleNext();
-    }
-  
-    function handleOptionSelect(index) {
+  }
+
+  function handleOptionSelect(index) {
       selectedOption = index;
-      // Auto-advance after short delay
       setTimeout(handleNext, 800);
-    }
-  </script>
-  
-  <header>
-    <div class="logo">Lingo</div>
-  </header>
+  }
+</script>
 
-  <main>
-    <div class="container">
+<header>
+  <div class="logo">Lingo</div>
+</header>
 
+<main>
+  <div class="container">
       <!-- Left side - Lottie animation -->
       <div class="lottie-container"></div>
-  
+
       <!-- Right side - Question form -->
-      <div class="question-container">
-        <h1>{questions[currentQuestionIndex].question}</h1>
-        
-        <div class="options-list">
-          {#each questions[currentQuestionIndex].options as option, index}
-            <button
-              class="option-button"
-              class:selected={selectedOption === index}
-              on:click={() => handleOptionSelect(index)}
-            >
-              <span class="option-icon">{option.icon}</span>
-              <span class="option-text">{option.text}</span>
-              <span class="check-icon">✓</span>
-            </button>
-          {/each}
-        </div>
-  
-        <button class="skip-button" on:click={handleSkip}>
-          Skip this question
-        </button>
-      </div>
-    </div>
-  </main>
+      {#if loading}
+          <div class="loading-container">
+              <div class="spinner"></div>
+              <p>Loading questions...</p>
+          </div>
+      {:else if error}
+          <div class="error-message">
+              {error}
+          </div>
+      {:else if !questions || questions.length === 0}
+          <div class="error-message">
+              No questions available
+          </div>
+      {:else if questions[currentQuestionIndex]}
+          <div class="question-container">
+              <h1>{questions[currentQuestionIndex].question}</h1>
+              
+              <div class="options-list">
+                  {#each questions[currentQuestionIndex].options as option, index}
+                      <button
+                          class="option-button"
+                          class:selected={selectedOption === index}
+                          on:click={() => handleOptionSelect(index)}>
+
+                          <span class="option-icon">{option.icon}</span>
+                          <span class="option-text">{option.text}</span>
+                          <span class="check-icon">✓</span>
+                      </button>
+                  {/each}
+              </div>
+              
+              <button class="skip-button" on:click={handleSkip}>
+                  Skip this question
+              </button>
+          </div>
+      {/if}
+  </div>
+</main>
   
   <style>
     header {
@@ -135,20 +141,6 @@
       display: flex;
       gap: 4rem;
       position: relative;
-    }
-  
-    .back-button {
-      position: absolute;
-      top: 2rem;
-      left: 2rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-  
-    .back-button:hover {
-      opacity: 0.7;
     }
   
     .lottie-container {
@@ -245,5 +237,33 @@
         max-width: 100%;
         height: 300px;
       }
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .error-message {
+        color: red;
+        text-align: center;
+        padding: 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
   </style>

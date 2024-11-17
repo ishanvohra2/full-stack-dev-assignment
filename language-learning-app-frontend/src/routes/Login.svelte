@@ -6,21 +6,22 @@
     import { authStore } from '$lib/stores/authStores';
     import { goto } from '$app/navigation';
     import image from '../assets/undraw_teacher_re_sico.svg'
-    let selectedLanguage = "English";
     let loading = false;
     let error = null;
 
-    //TODO Get from server
-    const languages = [
-      "English",
-      "Spanish",
-      "French",
-      "German",
-      "Chinese",
-      "Japanese"
-    ];
+    let languages = [];
+    let selectedLanguage = "";
 
     onMount(async () => {
+      try {
+            // Fetch languages from backend
+            const languagesData = await apiService.getLanguages();
+            languages = Object.keys(languagesData); // Assuming response has language codes as keys
+            selectedLanguage = languages[0];
+        } catch (error) {
+            console.error('Failed to fetch languages:', error);
+        }
+
         const token = localStorage.getItem('authToken');
         
         if (token) {
@@ -57,6 +58,14 @@
             // Verify token with backend
             await apiService.verifyGoogleToken(token);
             authStore.setUser(result.user, token);
+
+            const initialLanguages = [{
+                language: selectedLanguage,
+                level: "Beginner",
+                progress: 0
+            }];
+            
+            await apiService.createUserProfile(initialLanguages);
 
             // Navigate to onboarding
             await goto('/onboarding', {
