@@ -1,40 +1,91 @@
-<!-- src/routes/+page.svelte -->
 <script>
   import { goto } from '$app/navigation';
-  let languages = ["English", "Spanish", "French", "German", "Japanese", "Chinese", "Hindi"];
-  let selectedLanguage = languages[0];
-  const progress = 95;
+  import { onMount } from 'svelte';
+  import apiService from '$lib/apiService/apiService';
+
+  let languages = [];
+  let selectedLanguage = null;
+  let progress = 95;
+  let loading = true;
+  let error = null;
   
-  const grammarLessons = [
-    { id: '1', title: 'Basic Grammar Introduction', completed: true },
-    { id: '2', title: 'Present Simple Tense', completed: false },
-    { id: '3', title: 'Past Simple Tense', completed: false },
-    { id: '4', title: 'Future Tense Forms', completed: false },
-    { id: '5', title: 'Modal Verbs Usage', completed: false }
-  ];
+  let grammarLessons = [];
+  let audioExercises = [];
+  let vocabularyList = [];
 
-  const audioExercises = [
-    { id: '1', title: 'Pronunciation Basics', completed: false },
-    { id: '2', title: 'Common Phrases', completed: false },
-    { id: '3', title: 'Daily Conversations', completed: false },
-    { id: '4', title: 'Business English', completed: false },
-    { id: '5', title: 'Advanced Speaking', completed: false }
-  ];
+  onMount(async () => {
+    try {
+      // Fetch available languages
+      const profile = await apiService.getUserProfile()
+      languages = profile.languages
+      selectedLanguage = languages[0].language;
+      console.log("SELECTED LANGUAGE", selectedLanguage)
+      // Load initial lessons
+      await loadLessons(selectedLanguage);
+      
+      // Get user profile for progress
+      const userProfile = await apiService.getUserProfile();
+      if (userProfile.progress) {
+        progress = userProfile.progress;
+      }
+    } catch (err) {
+      error = 'Failed to load initial data. Please try again.';
+      console.error('Initialization error:', err);
+    } finally {
+      loading = false;
+    }
+  });
 
-  const vocabularyList = [
-    { id: '1', title: 'Essential Words', completed: false },
-    { id: '2', title: 'Business Vocabulary', completed: false },
-    { id: '3', title: 'Academic Terms', completed: false },
-    { id: '4', title: 'Idioms & Phrases', completed: false },
-    { id: '5', title: 'Advanced Vocabulary', completed: false }
-  ];
+  async function loadLessons(language) {
+    try {
+      loading = true;
+      const lessonsData = await apiService.getLessons(language);
+      
+      // Sort lessons into their respective categories
+      grammarLessons = lessonsData.grammar.sections.map((lesson, index) => ({
+        id: (index + 1).toString(),
+        title: lesson.content.split('.')[0], // Take first sentence as title
+        completed: false // You might want to track this in your backend
+      }));
+
+      audioExercises = lessonsData.audio.sections
+        .filter(section => section.type === 'audio')
+        .map((exercise, index) => ({
+          id: (index + 1).toString(),
+          title: exercise.title,
+          completed: false
+        }));
+
+      vocabularyList = lessonsData.vocabulary.sections.map((section, index) => ({
+        id: (index + 1).toString(),
+        title: section.type === 'flashcard' ? `Flashcard Set ${index + 1}` : 'Vocabulary Set',
+        completed: false
+      }));
+
+    } catch (err) {
+      error = 'Failed to load lessons. Please try again.';
+      console.error('Error loading lessons:', err);
+    } finally {
+      loading = false;
+    }
+  }
+
+  // Watch for language changes
+  $: if (selectedLanguage) {
+    loadLessons(selectedLanguage);
+  }
 
   async function navigateTo(destination) {
     await goto(destination);
   }
 
   async function openLesson(type, id) {
-    await goto(`/lesson?type=${type}&id=${id}`);
+    try {
+      await goto(`/lesson?type=${type}&id=${id}&language=${selectedLanguage}`);
+    } catch (err) {
+      console.error('Navigation error:', err);
+      error = 'Failed to open lesson. Please try again.';
+    }
   }
 </script>
 
@@ -52,98 +103,107 @@
   </nav>
   
   <main class="content">
-    <div class="header">
-      <div>
-        <h1>Welcome back!</h1>
-        <div class="headerRow">
-          <div class="headerItem">
-            <p class="subtitle">Learn</p>
-          </div>
-          <div class="headerItem">
-            <select bind:value={selectedLanguage}> 
-              {#each languages as language} 
-                <option value={language}>{language}</option>
-              {/each} 
-            </select>
+    {#if loading}
+      <div class="loading">Loading...</div>
+    {:else if error}
+      <div class="error">
+        {error}
+        <button on:click={() => window.location.reload()}>Retry</button>
+      </div>
+    {:else}
+      <div class="header">
+        <div>
+          <h1>Welcome back!</h1>
+          <div class="headerRow">
+            <div class="headerItem">
+              <p class="subtitle">Learn</p>
+            </div>
+            <div class="headerItem">
+              <select bind:value={selectedLanguage}> 
+                {#each languages as language} 
+                  <option value={language}>{language}</option>
+                {/each} 
+              </select>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="progress-container">
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: {progress}%"></div>
+      
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: {progress}%"></div>
+        </div>
+        <div class="progress-text">{progress}% completed</div>
       </div>
-      <div class="progress-text">{progress}% completed</div>
-    </div>
-    
-    <div class="sections-grid">
-      <section class="lesson-section">
-        <h2>Grammar Lessons</h2>
-        <div class="lesson-list">
-          {#each grammarLessons as lesson}
-            <div 
-              class="lesson-item"
-              on:click={() => openLesson('grammar', lesson.id)}
-              on:keydown={(e) => e.key === 'Enter' && openLesson('grammar', lesson.id)}
-              tabindex="0"
-              role="button"
-              aria-label={`Open ${lesson.title} grammar lesson`}
-            >
-              <div class="lesson-info">
-                <span class="material-icons icon">{lesson.completed ? 'check_circle' : 'play_circle'}</span>
-                <span class="lesson-title">{lesson.title}</span>
-              </div>
-              <span class="material-icons arrow">chevron_right</span>
-            </div>
-          {/each}
-        </div>
-      </section>
       
-      <section class="lesson-section">
-        <h2>Audio Exercises</h2>
-        <div class="lesson-list">
-          {#each audioExercises as exercise}
-            <div 
-              class="lesson-item"
-              on:click={() => openLesson('audio', exercise.id)}
-              on:keydown={(e) => e.key === 'Enter' && openLesson('audio', exercise.id)}
-              tabindex="0"
-              role="button"
-              aria-label={`Open ${exercise.title} audio exercise`}
-            >
-              <div class="lesson-info">
-                <span class="material-icons icon">headphones</span>
-                <span class="lesson-title">{exercise.title}</span>
+      <div class="sections-grid">
+        <section class="lesson-section">
+          <h2>Grammar Lessons</h2>
+          <div class="lesson-list">
+            {#each grammarLessons as lesson}
+              <div 
+                class="lesson-item"
+                on:click={() => openLesson('grammar', lesson.id)}
+                on:keydown={(e) => e.key === 'Enter' && openLesson('grammar', lesson.id)}
+                tabindex="0"
+                role="button"
+                aria-label={`Open ${lesson.title} grammar lesson`}
+              >
+                <div class="lesson-info">
+                  <span class="material-icons icon">{lesson.completed ? 'check_circle' : 'play_circle'}</span>
+                  <span class="lesson-title">{lesson.title}</span>
+                </div>
+                <span class="material-icons arrow">chevron_right</span>
               </div>
-              <span class="material-icons arrow">chevron_right</span>
-            </div>
-          {/each}
-        </div>
-      </section>
-      
-      <section class="lesson-section">
-        <h2>Vocabulary list</h2>
-        <div class="lesson-list">
-          {#each vocabularyList as item}
-            <div 
-              class="lesson-item"
-              on:click={() => openLesson('vocabulary', item.id)}
-              on:keydown={(e) => e.key === 'Enter' && openLesson('vocabulary', item.id)}
-              tabindex="0"
-              role="button"
-              aria-label={`Open ${item.title} vocabulary lesson`}
-            >
-              <div class="lesson-info">
-                <span class="material-icons icon">menu_book</span>
-                <span class="lesson-title">{item.title}</span>
+            {/each}
+          </div>
+        </section>
+        
+        <section class="lesson-section">
+          <h2>Audio Exercises</h2>
+          <div class="lesson-list">
+            {#each audioExercises as exercise}
+              <div 
+                class="lesson-item"
+                on:click={() => openLesson('audio', exercise.id)}
+                on:keydown={(e) => e.key === 'Enter' && openLesson('audio', exercise.id)}
+                tabindex="0"
+                role="button"
+                aria-label={`Open ${exercise.title} audio exercise`}
+              >
+                <div class="lesson-info">
+                  <span class="material-icons icon">headphones</span>
+                  <span class="lesson-title">{exercise.title}</span>
+                </div>
+                <span class="material-icons arrow">chevron_right</span>
               </div>
-              <span class="material-icons arrow">chevron_right</span>
-            </div>
-          {/each}
-        </div>
-      </section>
-    </div>
+            {/each}
+          </div>
+        </section>
+        
+        <section class="lesson-section">
+          <h2>Vocabulary List</h2>
+          <div class="lesson-list">
+            {#each vocabularyList as item}
+              <div 
+                class="lesson-item"
+                on:click={() => openLesson('vocabulary', item.id)}
+                on:keydown={(e) => e.key === 'Enter' && openLesson('vocabulary', item.id)}
+                tabindex="0"
+                role="button"
+                aria-label={`Open ${item.title} vocabulary lesson`}
+              >
+                <div class="lesson-info">
+                  <span class="material-icons icon">menu_book</span>
+                  <span class="lesson-title">{item.title}</span>
+                </div>
+                <span class="material-icons arrow">chevron_right</span>
+              </div>
+            {/each}
+          </div>
+        </section>
+      </div>
+    {/if}
   </main>
 </div>
 
@@ -332,12 +392,36 @@
     margin: 0 10px; 
   }
 
-  .logout-button {
-    margin-top: auto;
-    color: #ff4f99;
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: 1.2rem;
+    color: #666;
   }
 
-  .logout-button:hover {
-    background-color: #ffebf3;
+  .error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    color: #d32f2f;
+    text-align: center;
+  }
+
+  .error button {
+    padding: 0.5rem 1rem;
+    background-color: #ff4f99;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .error button:hover {
+    background-color: #ff1a75;
   }
 </style>

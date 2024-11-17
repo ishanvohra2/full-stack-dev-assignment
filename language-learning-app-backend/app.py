@@ -176,6 +176,15 @@ def add_language():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+    
+@app.route('/api/lessons/<language>', methods=['GET'])
+def get_lessons(language):
+    try:
+        # Get lessons from Firestore for the specified language
+        lessons = db.collection('lessons').document(f'{language}').get().to_dict()
+        return jsonify(lessons), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

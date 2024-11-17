@@ -195,6 +195,27 @@ class ApiService {
             throw error;
         }
     }
+
+    async getLessons(language) {
+        try {
+            const response = await fetch(`${this.baseUrl}/lessons/${language}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error('Failed to fetch lessons');
+            }
+    
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching lessons:', error);
+            throw error;
+        }
+    }
 }
 
 // Create a singleton instance
