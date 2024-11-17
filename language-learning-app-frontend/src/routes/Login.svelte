@@ -1,6 +1,7 @@
 <script>
-  import apiService from '$lib/apiService/apiService';
-  import { auth } from '$lib/firebase';
+    import { onMount } from 'svelte';
+    import apiService from '$lib/apiService/apiService';
+    import { auth } from '$lib/firebase';
     import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
     import { authStore } from '$lib/stores/authStores';
     import { goto } from '$app/navigation';
@@ -18,6 +19,26 @@
       "Chinese",
       "Japanese"
     ];
+
+    onMount(async () => {
+        const token = localStorage.getItem('authToken');
+        
+        if (token) {
+            loading = true
+            try {
+              await apiService.verifyGoogleToken(token);
+              await goto('/home', {
+                  invalidateAll: true
+              });
+            }
+            catch(error){
+              console.error(error)
+            }
+            finally {
+              loading = false;
+            }
+        }
+    });
   
     async function handleGoogleSignIn() {
         loading = true;
@@ -29,8 +50,6 @@
             
             // Get ID token
             const token = await result.user.getIdToken();
-            
-            console.log("AUTH TOKEN: ", token)
 
             // Store user and token in auth store
             authStore.setUser(result.user, token);
