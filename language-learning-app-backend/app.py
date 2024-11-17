@@ -37,19 +37,18 @@ def get_user_profile():
         # Get token from header
         token = request.headers.get('Authorization').split('Bearer ')[1]
         decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
         
-        # Here you would typically fetch user data from your database
-        # For now, returning basic info from token
-        return jsonify({
-            'uid': decoded_token['uid'],
-            'email': decoded_token.get('email'),
-            'name': decoded_token.get('name'),
-            'selected_language': 'English',  # Default value
-            'progress': {
-                'completed_lessons': 0,
-                'total_points': 0
-            }
-        })
+        # Fetch user data from Firestore
+        user_doc = db.collection('users').document(user_id).get()
+        
+        if not user_doc.exists:
+            return jsonify({
+                'error': 'User profile not found'
+            }), 404
+            
+        user_data = user_doc.to_dict()
+        return jsonify(user_data)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 401
@@ -80,7 +79,10 @@ def create_user_profile():
                 "lastLoggedInDate": firestore.SERVER_TIMESTAMP,
                 "languages": request.json.get('languages', []),
                 "email": decoded_token.get('email'),
-                "name": decoded_token.get('name')
+                "name": decoded_token.get('name'),
+                "streakDays": 0,
+                "totalPoints": 0,
+                "createdDate": firestore.SERVER_TIMESTAMP
             }
         )
         return jsonify({'message': 'Successful'}), 201

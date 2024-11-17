@@ -28,6 +28,8 @@
             loading = true
             try {
               await apiService.verifyGoogleToken(token);
+            const userProfile = await apiService.getUserProfile();
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
               checkOnboardingStatus()
             }
             catch(error){
@@ -64,6 +66,9 @@
             }];
             
             await apiService.createUserProfile(initialLanguages);
+
+            const userProfile = await apiService.getUserProfile();
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
             // Check onboarding status
             checkOnboardingStatus()
