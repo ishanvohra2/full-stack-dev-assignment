@@ -65,10 +65,6 @@
       selectedOption = null;
   }
 
-  function handleSkip() {
-      handleNext();
-  }
-
   function handleOptionSelect(index) {
       selectedOption = index;
       setTimeout(handleNext, 800);
@@ -115,10 +111,6 @@
                       </button>
                   {/each}
               </div>
-              
-              <button class="skip-button" on:click={handleSkip}>
-                  Skip this question
-              </button>
           </div>
       {/if}
   </div>
@@ -211,20 +203,6 @@
   
     .option-button.selected .check-icon {
       opacity: 1;
-    }
-  
-    .skip-button {
-      width: 100%;
-      padding: 1rem;
-      border: 1px solid #333;
-      border-radius: 0.5rem;
-      background: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-  
-    .skip-button:hover {
-      background-color: #f5f5f5;
     }
   
     @media (max-width: 768px) {
