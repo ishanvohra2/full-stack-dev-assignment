@@ -1,36 +1,40 @@
 <!-- src/routes/+page.svelte -->
 <script>
   import { goto } from '$app/navigation';
-  let languages = [ "English", "Spanish", "French", "German", "Japanese", "Chinese", "Hindi" ]; // Selected language let selectedLanguage = languages[0];
+  let languages = ["English", "Spanish", "French", "German", "Japanese", "Chinese", "Hindi"];
   let selectedLanguage = languages[0];
   const progress = 95;
   
   const grammarLessons = [
-    { title: 'Basic Grammar Introduction', completed: true },
-    { title: 'Present Simple Tense', completed: false },
-    { title: 'Past Simple Tense', completed: false },
-    { title: 'Future Tense Forms', completed: false },
-    { title: 'Modal Verbs Usage', completed: false }
+    { id: '1', title: 'Basic Grammar Introduction', completed: true },
+    { id: '2', title: 'Present Simple Tense', completed: false },
+    { id: '3', title: 'Past Simple Tense', completed: false },
+    { id: '4', title: 'Future Tense Forms', completed: false },
+    { id: '5', title: 'Modal Verbs Usage', completed: false }
   ];
 
   const audioExercises = [
-    { title: 'Pronunciation Basics', completed: false },
-    { title: 'Common Phrases', completed: false },
-    { title: 'Daily Conversations', completed: false },
-    { title: 'Business English', completed: false },
-    { title: 'Advanced Speaking', completed: false }
+    { id: '1', title: 'Pronunciation Basics', completed: false },
+    { id: '2', title: 'Common Phrases', completed: false },
+    { id: '3', title: 'Daily Conversations', completed: false },
+    { id: '4', title: 'Business English', completed: false },
+    { id: '5', title: 'Advanced Speaking', completed: false }
   ];
 
   const vocabularyList = [
-    { title: 'Essential Words', completed: false },
-    { title: 'Business Vocabulary', completed: false },
-    { title: 'Academic Terms', completed: false },
-    { title: 'Idioms & Phrases', completed: false },
-    { title: 'Advanced Vocabulary', completed: false }
+    { id: '1', title: 'Essential Words', completed: false },
+    { id: '2', title: 'Business Vocabulary', completed: false },
+    { id: '3', title: 'Academic Terms', completed: false },
+    { id: '4', title: 'Idioms & Phrases', completed: false },
+    { id: '5', title: 'Advanced Vocabulary', completed: false }
   ];
 
   async function navigateTo(destination) {
-    await goto(destination)
+    await goto(destination);
+  }
+
+  async function openLesson(type, id) {
+    await goto(`/lesson?type=${type}&id=${id}`);
   }
 </script>
 
@@ -41,7 +45,7 @@
       <span class="material-icons">school</span>
       <span>LEARN</span>
     </button>
-    <button class="nav-button" on:click={navigateTo('/profile')}>
+    <button class="nav-button" on:click={() => navigateTo('/profile')}>
       <span class="material-icons">person</span>
       <span>PROFILE</span>
     </button>
@@ -78,7 +82,14 @@
         <h2>Grammar Lessons</h2>
         <div class="lesson-list">
           {#each grammarLessons as lesson}
-            <div class="lesson-item">
+            <div 
+              class="lesson-item"
+              on:click={() => openLesson('grammar', lesson.id)}
+              on:keydown={(e) => e.key === 'Enter' && openLesson('grammar', lesson.id)}
+              tabindex="0"
+              role="button"
+              aria-label={`Open ${lesson.title} grammar lesson`}
+            >
               <div class="lesson-info">
                 <span class="material-icons icon">{lesson.completed ? 'check_circle' : 'play_circle'}</span>
                 <span class="lesson-title">{lesson.title}</span>
@@ -93,7 +104,14 @@
         <h2>Audio Exercises</h2>
         <div class="lesson-list">
           {#each audioExercises as exercise}
-            <div class="lesson-item">
+            <div 
+              class="lesson-item"
+              on:click={() => openLesson('audio', exercise.id)}
+              on:keydown={(e) => e.key === 'Enter' && openLesson('audio', exercise.id)}
+              tabindex="0"
+              role="button"
+              aria-label={`Open ${exercise.title} audio exercise`}
+            >
               <div class="lesson-info">
                 <span class="material-icons icon">headphones</span>
                 <span class="lesson-title">{exercise.title}</span>
@@ -108,7 +126,14 @@
         <h2>Vocabulary list</h2>
         <div class="lesson-list">
           {#each vocabularyList as item}
-            <div class="lesson-item">
+            <div 
+              class="lesson-item"
+              on:click={() => openLesson('vocabulary', item.id)}
+              on:keydown={(e) => e.key === 'Enter' && openLesson('vocabulary', item.id)}
+              tabindex="0"
+              role="button"
+              aria-label={`Open ${item.title} vocabulary lesson`}
+            >
               <div class="lesson-info">
                 <span class="material-icons icon">menu_book</span>
                 <span class="lesson-title">{item.title}</span>
@@ -261,10 +286,15 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    outline: none;
   }
   
-  .lesson-item:hover {
+  .lesson-item:hover, .lesson-item:focus {
     background-color: #f8f8ff;
+  }
+
+  .lesson-item:focus-visible {
+    box-shadow: 0 0 0 2px #ff4f99;
   }
 
   .lesson-info {
@@ -287,10 +317,18 @@
     transition: transform 0.2s ease;
   }
 
-  .lesson-item:hover .arrow {
+  .lesson-item:hover .arrow,
+  .lesson-item:focus .arrow {
     transform: translateX(4px);
     color: #ff4f99;
   }
-  .headerRow { display: flex; flex-direction: row; } 
-  .headerItem { margin: 0 10px; }
+  
+  .headerRow { 
+    display: flex; 
+    flex-direction: row; 
+  } 
+  
+  .headerItem { 
+    margin: 0 10px; 
+  }
 </style>
